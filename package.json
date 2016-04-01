@@ -8,14 +8,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/emitter-io/nodejs.git"
+    "url": "git+https://github.com/emitter-io/javascript.git"
   },
   "author": "Misakai Ltd.",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/emitter-io/nodejs/issues"
+    "url": "https://github.com/emitter-io/javascript/issues"
   },
-  "homepage": "https://github.com/emitter-io/nodejs#readme",
+  "homepage": "https://github.com/emitter-io/javascript#readme",
   "dependencies": {
     "mqtt": "^1.7.4"
   },
