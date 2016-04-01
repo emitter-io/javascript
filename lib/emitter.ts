@@ -19,6 +19,20 @@ class Emitter {
     }
     
     /**
+     * Occurs when the client went offline.
+     */
+    private $onOffline() : void {
+        this.$tryInvoke('offline', this);
+    }
+    
+    /**
+     * Occurs when the client went offline.
+     */
+    private $onError(error) : void {
+        this.$tryInvoke('error', error);
+    }
+    
+    /**
      * Invokes the callback with a specific
      */
     private $tryInvoke(name: string, args: any) {
@@ -54,7 +68,11 @@ class Emitter {
         });
         
         this.$mqtt.on('offline', () => {
-            this.$onDisconnect()
+            this.$onOffline()
+        });
+        
+        this.$mqtt.on('error', (error) => {
+            this.$onError(error)
         });
         
         this.$mqtt.on('message', (topic, msg, packet) => {
@@ -141,6 +159,8 @@ class Emitter {
             case "connect": 
             case "disconnect":
             case "message":
+            case "offline":
+            case "error":
             case "keygen":
             break;
             default:
