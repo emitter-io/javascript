@@ -12,14 +12,15 @@ npm install emitter-io --save
 ## Example
 
 ```
-// once we're connected, subscribe to the 'chat' channel
-emitter.on('connect', function(){
-	emitter.subscribe({
-		key: "<channel key>",
-		channel: "chat"
-	});
-});
+// connect to emitter.io and get the client
+var emitter = require('emitter').connect();
 
+// once we're connected, subscribe to the 'chat' channel
+emitter.subscribe({
+    key: "<channel key>",
+    channel: "chat"
+});
+    
 // on every message, print it out
 emitter.on('message', function(msg){
 	console.log( msg.asString() );
@@ -31,7 +32,4 @@ emitter.publish({
 	channel: "chat/my_name",
 	message: "hello, emitter!"
 });
-
-// actually connect to emitter service
-emitter.connect();
 ```
