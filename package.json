@@ -1,7 +1,7 @@
 {
-  "name": "emitter",
+  "name": "emitter-io",
   "version": "0.1.0",
-  "description": "Enhanced MQTT client to use with emitter.io platform",
+  "description": "NodeJS MQTT client to use with emitter.io platform",
   "main": "lib/emitter.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"

@@ -1,8 +1,15 @@
-# javascript
-Browser JavaScript SDK for emitter.io messaging platform.
+[![NPM](https://nodei.co/npm/emitter-io.png)](https://nodei.co/npm/emitter-io/)
+[![NPM](https://nodei.co/npm-dl/emitter-io.png)](https://nodei.co/npm/emitter-io/)
 
-[GitHub Repository](https://github.com/emitter-io/javascript)
+Client library for emitter.io platform written in JavaScript for node.js.
 
+## Installation
+
+```
+npm install emitter-io --save
+```
+
+## Example
 
 ```
 // once we're connected, subscribe to the 'chat' channel
