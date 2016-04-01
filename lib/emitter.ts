@@ -1,5 +1,6 @@
 var mqtt = require('mqtt');
 
+
 module.exports = function() {
     class Emitter {
         private $mqtt: any;

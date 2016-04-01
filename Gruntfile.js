@@ -4,7 +4,7 @@ module.exports = function(grunt){
 	grunt.initConfig({
 		concat: {
 			js: {
-				src: ['lib/mqttws31.js', 'lib/emitter.js'],
+				src: ['lib/emitter.js'],
 				dest: 'build/emitter.js',
 			}
 		},

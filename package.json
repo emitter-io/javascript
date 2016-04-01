@@ -1,21 +1,21 @@
 {
   "name": "emitter",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "Enhanced MQTT client to use with emitter.io platform",
-  "main": "index.js",
+  "main": "lib/emitter.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/emitter-io/javascript.git"
+    "url": "git+https://github.com/emitter-io/nodejs.git"
   },
   "author": "Misakai Ltd.",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/emitter-io/javascript/issues"
+    "url": "https://github.com/emitter-io/nodejs/issues"
   },
-  "homepage": "https://github.com/emitter-io/javascript#readme",
+  "homepage": "https://github.com/emitter-io/nodejs#readme",
   "dependencies": {
     "mqtt": "^1.7.4"
   },
