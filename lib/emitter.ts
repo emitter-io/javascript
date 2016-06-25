@@ -1,42 +1,42 @@
-var mqtt = require('mqtt');
+const mqtt = require('mqtt');
 
 class Emitter {
-    private $mqtt: any;
-    private $callbacks: Object;
+    private _mqtt: any;
+    private _callbacks: Object;
 
     /**
      * Occurs when connection is established.
      */
-    private $onConnect() : void {
-        this.$tryInvoke('connect', this);
+    private _onConnect() : void {
+        this._tryInvoke('connect', this);
     }
     
     /**
      * Occurs when the connection was lost.
      */
-    private $onDisconnect() : void {
-        this.$tryInvoke('disconnect', this);
+    private _onDisconnect() : void {
+        this._tryInvoke('disconnect', this);
     }
     
     /**
      * Occurs when the client went offline.
      */
-    private $onOffline() : void {
-        this.$tryInvoke('offline', this);
+    private _onOffline() : void {
+        this._tryInvoke('offline', this);
     }
     
     /**
      * Occurs when the client went offline.
      */
-    private $onError(error) : void {
-        this.$tryInvoke('error', error);
+    private _onError(error) : void {
+        this._tryInvoke('error', error);
     }
     
     /**
      * Invokes the callback with a specific
      */
-    private $tryInvoke(name: string, args: any) {
-        var callback = this.$callbacks[name];
+    private _tryInvoke(name: string, args: any) {
+        var callback = this._callbacks[name];
         if(typeof(callback) !== 'undefined' && callback !== null){
             callback(args);
             return;
@@ -46,45 +46,97 @@ class Emitter {
     /**
      * Checks if a string starts with a prefix.
      */
-    private $startsWith(text: string, prefix: string): boolean {
+    private _startsWith(text: string, prefix: string): boolean {
         return text.slice(0, prefix.length) == prefix;
+    }
+    
+    /**
+     * Checks whether a string ends with a suffix.
+     */
+    private _endsWith(text: string, suffix: string) : boolean {
+        return text.indexOf(suffix, text.length - suffix.length) !== -1;
+    };
+
+    
+    /**
+     * Formats a channel for emitter.io protocol.
+     * 
+     * @private
+     * @param {string} key The key to use.
+     * @param {string} channel The channel name.
+     * @param {...Option[]} options The list of options to apply.
+     * @returns
+     */
+    private _formatChannel(key: string, channel: string, options: Option[]) {
+        // Prefix with the key
+        var formatted = this._endsWith(key, "/")
+            ? key + channel
+            : key + "/" + channel;
+
+        // Add trailing slash
+        if (!this._endsWith(formatted, "/"))
+            formatted += "/";
+
+        // Add options
+        if (options != null && options.length > 0)
+        {
+            formatted += "?";
+            for (var i: number = 0; i < options.length; ++i)
+            {
+                formatted += options[i].key + "=" + options[i].value;
+                if (i + 1 < options.length)
+                    formatted += "&";
+            }
+        }
+
+        // We're done compiling the channel name
+        return formatted;
     }
     
     /**
      * Connects to the emitter service.
      */
-    public connect(host: string, port: number) {
-        if (host == undefined) host = "api.emitter.io";     
-        if (port == undefined) port = 8080;
+    public connect(request?: ConnectRequest) {
+        
+        // Apply defaults
+        if (request == null) request = { };
+        if (request.host == null) request.host = "api.emitter.io";     
+        if (request.port == null) request.port = request.secure ? 8443 : 8080;
+        if (request.keepalive == null) request.keepalive = 30;
+        if (request.secure == null) request.secure = false;
+        
+        // Remove all the protocols attached to our hostname first and then prefix with the correct protocol
+        request.host = request.host.replace(/.*?:\/\//g, "");
+        request.host = (request.secure ? "wss://" : "ws://") + request.host;
 
-        this.$callbacks = {};
-        this.$mqtt = mqtt.connect({ port: port, host: host, keepalive: 10000 });
-        this.$mqtt.on('connect', () => {
-            this.$onConnect(); 
+        this._callbacks = {};
+        this._mqtt = mqtt.connect(request);
+        this._mqtt.on('connect', () => {
+            this._onConnect(); 
         });
         
-        this.$mqtt.on('close', () => {
-            this.$onDisconnect()
+        this._mqtt.on('close', () => {
+            this._onDisconnect()
         });
         
-        this.$mqtt.on('offline', () => {
-            this.$onOffline()
+        this._mqtt.on('offline', () => {
+            this._onOffline()
         });
         
-        this.$mqtt.on('error', (error) => {
-            this.$onError(error)
+        this._mqtt.on('error', (error) => {
+            this._onError(error)
         });
         
-        this.$mqtt.on('message', (topic, msg, packet) => {
+        this._mqtt.on('message', (topic, msg, packet) => {
             var message = new EmitterMessage(packet);
-            if(this.$startsWith(message.channel, 'emitter/keygen')) {
+            if(this._startsWith(message.channel, 'emitter/keygen')) {
                 // This is keygen message
-                this.$tryInvoke('keygen', message.asObject())
+                this._tryInvoke('keygen', message.asObject())
             }
             else
             {
                 // Do we have a message callback
-                this.$tryInvoke('message', message);
+                this._tryInvoke('message', message);
             }
         });
     }
@@ -93,7 +145,7 @@ class Emitter {
      * Disconnects the client.
      */
     public disconnect(){
-        this.$mqtt.end();
+        this._mqtt.end();
     }
     
     /**
@@ -107,8 +159,13 @@ class Emitter {
         if (typeof (request.message) !== "object" && typeof (request.message) !== "string")
             this.logError("emitter.publish: request object does not contain a 'message' object.");
 
-        var topic = request.key + "/" + request.channel;
-        this.$mqtt.publish(topic, request.message);
+        var options = new Array<Option>();
+        if (request.ttl != null){
+            options.push({ key: "ttl", value: request.ttl.toString() });
+        }
+        
+        var topic = this._formatChannel(request.key, request.channel, options);
+        this._mqtt.publish(topic, request.message);
     }
     
     /**
@@ -120,8 +177,14 @@ class Emitter {
         if (typeof (request.channel) !== "string")
             this.logError("emitter.subscribe: request object does not contain a 'channel' string.");
 
+        var options = new Array<Option>();
+        if (request.last != null){
+            options.push({ key: "last", value: request.last.toString() });
+        }
+        
         // Send MQTT subscribe
-        this.$mqtt.subscribe(request.key + "/" + request.channel);
+        var topic = this._formatChannel(request.key, request.channel, options);
+        this._mqtt.subscribe(topic);
     }
 
     /**
@@ -134,7 +197,8 @@ class Emitter {
             this.logError("emitter.unsubscribe: request object does not contain a 'channel' string.")
 
         // Send MQTT unsubscribe
-        this.$mqtt.unsubscribe(request.key + "/" + request.channel);
+        var topic = this._formatChannel(request.key, request.channel, []);
+        this._mqtt.unsubscribe(topic);
     }
     
     /**
@@ -147,7 +211,7 @@ class Emitter {
             this.logError("emitter.keygen: request object does not contain a 'channel' string.")
             
         // Publish the request
-        this.$mqtt.publish("emitter/keygen/", JSON.stringify(request));
+        this._mqtt.publish("emitter/keygen/", JSON.stringify(request));
     }
     
     /**
@@ -168,7 +232,7 @@ class Emitter {
         }
         
         // Set the callback
-        this.$callbacks[event] = callback;
+        this._callbacks[event] = callback;
     }
     
     /**
@@ -181,15 +245,68 @@ class Emitter {
 }
 
 
+/**
+ * Represents connection options. 
+ * 
+ * @interface IConnectOptions
+ */
+interface ConnectRequest {
+    
+    /**
+     * Whether the connection should be MQTT over TLS or not. 
+     * 
+     * @type {boolean}
+     */
+    secure?: boolean;
+    
+    /**
+     * The hostname to connect to. 
+     * 
+     * @type {string}
+     */
+    host?: string;
+    
+    /**
+     * The port number to connect to. 
+     * 
+     * @type {number}
+     */
+    port?: number;
+    
+    /**
+     * The number of seconts to wait between keepalive packets. Set to 0 to disable.
+     * 
+     * @type {number} Keepalive in seconds.
+     */
+    keepalive?: number;
+    
+    /**
+     * The username required by your broker, if any
+     * 
+     * @type {string}
+     */
+    username?: string;
+    
+    /**
+     * The password required by your broker, if any
+     * 
+     * @type {string}
+     */
+    password?: string;
+}
+
+
 interface PublishRequest {
     key: string;
     channel: string;
     message: any;
+    ttl?: number;
 }
 
 interface SubscriptionRequest {
     key: string;
     channel: string;
+    last: number;
 }
 
 interface KeyGenRequest {
@@ -199,15 +316,22 @@ interface KeyGenRequest {
     ttl: number;
 }
 
+/**
+ * Represents a message send througn emitter.io
+ * 
+ * @class EmitterMessage
+ */
 class EmitterMessage {
     
     public channel: string;
     public binary: any;
     
     /**
-     * Constructs a new emitter message.
+     * Creates an instance of EmitterMessage.
+     * 
+     * @param {*} m The message
      */
-    constructor(m: any){
+    constructor(m: IMqttMessage){
         this.channel = m.topic;
         this.binary = m.payload;
     }
@@ -234,10 +358,26 @@ class EmitterMessage {
     }
 }
 
+/**
+ * Represents an MQTT message.
+ * 
+ * @interface IMqttMessage
+ */
+interface IMqttMessage {
+    topic: string;
+    payload: any;
+}
+
+interface Option {
+    key: string;
+    value: string;
+}
+
 module.exports = {
-   connect: function(host: string, port: number) : Emitter{
+   connect: function(request?: ConnectRequest) : Emitter{
        var client = new Emitter();
-       client.connect(host, port);
+       client.connect(request);
        return client;
    }
 };
+
