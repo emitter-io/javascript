@@ -97,20 +97,37 @@ class Emitter {
      * Connects to the emitter service.
      */
     public connect(request?: ConnectRequest) {
+        request = request || {};
         
-        // Apply defaults
-        if (request == null) request = { };
-        if (request.host == null) request.host = "api.emitter.io";     
-        if (request.port == null) request.port = request.secure ? 8443 : 8080;
-        if (request.keepalive == null) request.keepalive = 30;
-        if (request.secure == null) request.secure = false;
+        // auto-resolve the security level
+        if (request.secure == null) {
+            if (window !== undefined && window != null && window.location != null && window.location.protocol != null){
+                request.secure = (window.location.protocol == 'https:') ? true : false;    
+            } else {
+                request.secure = false;
+            }
+        }
         
-        // Remove all the protocols attached to our hostname first and then prefix with the correct protocol
+        // default options
+        var defaultConnectOptions = {
+            host: "api.emitter.io",
+            port: request.secure ? 8443 : 8080,
+            keepalive: 30,
+            secure: false
+        }
+            
+        // apply defaults
+        for (var k in defaultConnectOptions) {
+            request[k] = ('undefined' === typeof request[k])
+                ? defaultConnectOptions[k]
+                : request[k];
+        }
+
         request.host = request.host.replace(/.*?:\/\//g, "");
-        request.host = (request.secure ? "wss://" : "ws://") + request.host;
+        var brokerUrl = (request.secure ? 'wss://' : 'ws://') + request.host + ':' + request.port;
 
         this._callbacks = {};
-        this._mqtt = mqtt.connect(request);
+        this._mqtt = mqtt.connect(brokerUrl, request);
         this._mqtt.on('connect', () => {
             this._onConnect(); 
         });
