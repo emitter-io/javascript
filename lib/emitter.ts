@@ -101,7 +101,7 @@ class Emitter {
         
         // auto-resolve the security level
         if (request.secure == null) {
-            if (window !== undefined && window != null && window.location != null && window.location.protocol != null){
+            if (typeof window !== 'undefined' && window != null && window.location != null && window.location.protocol != null){
                 request.secure = (window.location.protocol == 'https:') ? true : false;    
             } else {
                 request.secure = false;
