@@ -150,6 +150,10 @@ class Emitter {
                 // This is keygen message
                 this._tryInvoke('keygen', message.asObject())
             }
+            else if(this._startsWith(message.channel, 'emitter/presence')) {
+                // This is presence message
+                this._tryInvoke('presence', message.asObject())
+            }
             else
             {
                 // Do we have a message callback
@@ -177,8 +181,12 @@ class Emitter {
             this.logError("emitter.publish: request object does not contain a 'message' object.");
 
         var options = new Array<Option>();
-        if (request.ttl != null){
+        if (request.ttl){
             options.push({ key: "ttl", value: request.ttl.toString() });
+        }
+
+        if (request.presence && request.presence == true){
+            options.push({ key: "presence", value: "1" });
         }
         
         var topic = this._formatChannel(request.key, request.channel, options);
@@ -230,6 +238,19 @@ class Emitter {
         // Publish the request
         this._mqtt.publish("emitter/keygen/", JSON.stringify(request));
     }
+
+    /**
+     * Sends a presence request to the server.
+     */
+    public presence (request: PresenceRequest) {
+        if (typeof (request.key) !== "string")
+            this.logError("emitter.presence: request object does not contain a 'key' string.")
+        if (typeof (request.channel) !== "string")
+            this.logError("emitter.presence: request object does not contain a 'channel' string.")
+            
+        // Publish the request
+        this._mqtt.publish("emitter/presence/", JSON.stringify(request));
+    }
     
     /**
      * Hooks an event to the client.
@@ -243,6 +264,7 @@ class Emitter {
             case "offline":
             case "error":
             case "keygen":
+            case "presence":
             break;
             default:
                 this.logError("emitter.on: unknown event type, supported values are 'connect', 'disconnect', 'message' and 'keygen'.");
@@ -318,6 +340,7 @@ interface PublishRequest {
     channel: string;
     message: any;
     ttl?: number;
+    presence?: boolean;
 }
 
 interface SubscriptionRequest {
@@ -332,6 +355,12 @@ interface KeyGenRequest {
     type: string;
     ttl: number;
 }
+
+interface PresenceRequest {
+    key: string;
+    channel: string;
+}
+
 
 /**
  * Represents a message send througn emitter.io
