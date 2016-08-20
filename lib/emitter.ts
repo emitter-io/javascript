@@ -184,10 +184,6 @@ class Emitter {
         if (request.ttl){
             options.push({ key: "ttl", value: request.ttl.toString() });
         }
-
-        if (request.presence && request.presence == true){
-            options.push({ key: "presence", value: "1" });
-        }
         
         var topic = this._formatChannel(request.key, request.channel, options);
         this._mqtt.publish(topic, request.message);
@@ -205,6 +201,10 @@ class Emitter {
         var options = new Array<Option>();
         if (request.last != null){
             options.push({ key: "last", value: request.last.toString() });
+        }
+
+        if (request.presence && request.presence == true){
+            options.push({ key: "presence", value: "1" });
         }
         
         // Send MQTT subscribe
@@ -340,13 +340,13 @@ interface PublishRequest {
     channel: string;
     message: any;
     ttl?: number;
-    presence?: boolean;
 }
 
 interface SubscriptionRequest {
     key: string;
     channel: string;
-    last: number;
+    last?: number;
+    presence?: boolean;
 }
 
 interface KeyGenRequest {
