@@ -144,7 +144,7 @@ interface KeyGenRequest {
  */
 interface PresenceRequest {
     /**
-     * The key to use for this request.
+     * The key to use for this request. The key should match the channel and have presence flag associated.
      *
      * @type {string}
      */
@@ -171,11 +171,11 @@ interface PresenceRequest {
 /**
  * Represents a presence response message or a join/leave notification.
  *
- * @interface PresenceResponse
+ * @interface PresenceEvent
  */
-interface PresenceResponse {
+interface PresenceEvent {
     /**
-     * The event, must be "status", "join" or "leave".
+     * The event, can be "status", "join" or "leave".
      *
      * @type {string}
      */
