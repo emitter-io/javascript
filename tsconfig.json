@@ -4,6 +4,7 @@
 		"module": "commonjs",
 		"sourceMap": true,
 		"removeComments": false,
-        "watch": true
+        "watch": true,
+		"declaration": true
 	}
 }

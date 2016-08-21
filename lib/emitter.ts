@@ -202,10 +202,6 @@ class Emitter {
         if (request.last != null){
             options.push({ key: "last", value: request.last.toString() });
         }
-
-        if (request.presence && request.presence == true){
-            options.push({ key: "presence", value: "1" });
-        }
         
         // Send MQTT subscribe
         var topic = this._formatChannel(request.key, request.channel, options);
@@ -346,7 +342,6 @@ interface SubscriptionRequest {
     key: string;
     channel: string;
     last?: number;
-    presence?: boolean;
 }
 
 interface KeyGenRequest {
@@ -356,11 +351,82 @@ interface KeyGenRequest {
     ttl: number;
 }
 
+/**
+ * Represents a presence request.
+ * 
+ * @interface PresenceRequest
+ */
 interface PresenceRequest {
+    /**
+     * The key to use for this request.
+     * 
+     * @type {string}
+     */
     key: string;
+
+    /**
+     * The target channel for the presence request.
+     * 
+     * @type {string}
+     */
     channel: string;
+
+    /**
+     * Whether a full status should be sent back in the response.
+     * 
+     * @type {boolean}
+     */
+    status?: boolean;
+
+    /**
+     * Whether we should subscribe this client to presence notification events.
+     * 
+     * @type {boolean}
+     */
+    changes?: boolean;
 }
 
+/**
+ * Represents a presence response message or a join/leave notification.
+ * 
+ * @interface PresenceResponse
+ */
+interface PresenceResponse {
+    /**
+     * The event, must be "status", "join" or "leave".
+     * 
+     * @type {string}
+     */
+    event: string;
+
+    /**
+     * The channel for this event.
+     * 
+     * @type {string}
+     */
+    channel: string;
+
+    /**
+     * The current channel occupancy (the number of subscribers).
+     * 
+     * @type {number}
+     */
+    occupancy: number;
+
+    /**
+     * The UNIX timestamp of this event.
+     * 
+     * @type {number}
+     */
+    time: number;
+
+    /**
+     * The list of clients or the client id.
+     * 
+     * @type {(Array<string> | string)}
+     */
+    who: Array<string> | string;
+}
 
 /**
  * Represents a message send througn emitter.io
