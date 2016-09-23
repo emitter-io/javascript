@@ -423,9 +423,25 @@ interface PresenceEvent {
     /**
      * The list of clients or the client id.
      * 
-     * @type {(Array<string> | string)}
+     * @type {(Array<PresenceInfo> | PresenceInfo)}
      */
-    who: Array<string> | string;
+    who: Array<PresenceInfo> | PresenceInfo;
+}
+
+interface PresenceInfo {
+    /**
+     * The id of the connection. 
+     * 
+     * @type {string}
+     */
+    id: string;
+    
+    /**
+     * The MQTT username associated with the connection. 
+     * 
+     * @type {string}
+     */
+    username: string;
 }
 
 /**
