@@ -1,7 +1,7 @@
 [![NPM](https://nodei.co/npm/emitter-io.png)](https://nodei.co/npm/emitter-io/)
 [![NPM](https://nodei.co/npm-dl/emitter-io.png)](https://nodei.co/npm/emitter-io/)
 
-Client library for emitter.io platform written in JavaScript for both NodeJS and the Browser.
+This repository contains JavaScript client for both NodeJS and the Browser for [Emitter](https://emitter.io) (see also on [Emitter GitHub](https://github.com/emitter-io/emitter)). Emitter is an **open-source** real-time communication service for connecting online devices. At its core, emitter.io is a distributed, scalable and fault-tolerant publish-subscribe messaging platform based on MQTT protocol and featuring message storage.
 
 * [Installation](#install)
 * [Example](#example)
