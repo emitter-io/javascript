@@ -482,7 +482,16 @@ class EmitterMessage {
      * Returns the payload as JSON-deserialized object.
      */
     public asObject(): any{
-        return JSON.parse(this.asString());
+        var object = {};
+		try
+		{
+			object = JSON.parse(this.asString());
+		}
+		catch (err)
+		{
+			console.error(err);
+		}
+		return object;
     }
 }
 
