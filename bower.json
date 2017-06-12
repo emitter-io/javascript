@@ -1,0 +1,17 @@
+{
+  "name": "emitter-io",
+  "description": "NodeJS MQTT client to use with emitter.io platform",
+  "main": "lib/emitter.js",
+  "authors": [
+    "Misakai Ltd."
+  ],
+  "license": "MIT",
+  "homepage": "https://github.com/emitter-io/javascript.git",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ]
+}
