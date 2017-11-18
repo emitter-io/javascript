@@ -43,7 +43,7 @@ declare class Emitter {
     /**
      * Connects to the emitter service.
      */
-    connect(request?: ConnectRequest): void;
+    connect(request?: ConnectRequest, connectCallback?: any): void;
     /**
      * Disconnects the client.
      */
@@ -68,6 +68,10 @@ declare class Emitter {
      * Sends a presence request to the server.
      */
     presence(request: PresenceRequest): void;
+    /**
+     * Request information about the connection to the server.
+     */
+    me(): void;
     /**
      * Hooks an event to the client.
      */
@@ -201,9 +205,23 @@ interface PresenceEvent {
     /**
      * The list of clients or the client id.
      *
-     * @type {(Array<string> | string)}
+     * @type {(Array<PresenceInfo> | PresenceInfo)}
      */
-    who: Array<string> | string;
+    who: Array<PresenceInfo> | PresenceInfo;
+}
+interface PresenceInfo {
+    /**
+     * The id of the connection.
+     *
+     * @type {string}
+     */
+    id: string;
+    /**
+     * The MQTT username associated with the connection.
+     *
+     * @type {string}
+     */
+    username: string;
 }
 /**
  * Represents a message send througn emitter.io
