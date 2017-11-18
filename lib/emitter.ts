@@ -257,7 +257,7 @@ class Emitter {
     /**
      * Request information about the connection to the server.
      */
-    public me = function () {
+    public me () {
         // Publish the request
         this._mqtt.publish("emitter/me/", "");
     };
