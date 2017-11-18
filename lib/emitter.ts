@@ -147,12 +147,16 @@ class Emitter {
         this._mqtt.on('message', (topic, msg, packet) => {
             var message = new EmitterMessage(packet);
             if(this._startsWith(message.channel, 'emitter/keygen')) {
-                // This is keygen message
+                // This is keygen message.
                 this._tryInvoke('keygen', message.asObject())
             }
             else if(this._startsWith(message.channel, 'emitter/presence')) {
-                // This is presence message
+                // This is presence message.
                 this._tryInvoke('presence', message.asObject())
+            }
+            else if (this._startsWith(message.channel, 'emitter/me')) {
+                // This is a message requesting info on the connection.
+                this._tryInvoke('me', message.asObject());
             }
             else
             {
@@ -250,7 +254,13 @@ class Emitter {
         // Publish the request
         this._mqtt.publish("emitter/presence/", JSON.stringify(request));
     }
-    
+    /**
+     * Request information about the connection to the server.
+     */
+    public me () {
+        // Publish the request
+        this._mqtt.publish("emitter/me/", "");
+    };
     /**
      * Hooks an event to the client.
      */
