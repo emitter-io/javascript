@@ -43,7 +43,7 @@ declare class Emitter {
     /**
      * Connects to the emitter service.
      */
-    connect(request?: ConnectRequest, connectCallback?: any): void;
+    connect(request?: ConnectRequest, handler?: () => void): void;
     /**
      * Disconnects the client.
      */

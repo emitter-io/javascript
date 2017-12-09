@@ -96,7 +96,7 @@ class Emitter {
     /**
      * Connects to the emitter service.
      */
-    public connect(request?: ConnectRequest, connectCallback?: any) {
+    public connect(request?: ConnectRequest, handler?: () => void) {
         request = request || {};
         
         // auto-resolve the security level
@@ -126,7 +126,7 @@ class Emitter {
         request.host = request.host.replace(/.*?:\/\//g, "");
         var brokerUrl = (request.secure ? 'wss://' : 'ws://') + request.host + ':' + request.port;
 
-        this._callbacks = {"connect": connectCallback};
+        this._callbacks = {"connect": handler};
         this._mqtt = mqtt.connect(brokerUrl, request);
         this._mqtt.on('connect', () => {
             this._onConnect(); 
@@ -164,9 +164,6 @@ class Emitter {
                 this._tryInvoke('message', message);
             }
         });
-		
-		if (connectCallback)
-			connectCallback();
     }
     
     /**
