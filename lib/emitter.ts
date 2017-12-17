@@ -111,7 +111,7 @@ class Emitter {
         // default options
         var defaultConnectOptions = {
             host: "api.emitter.io",
-            port: request.secure ? 8443 : 8080,
+            port: request.secure ? 443 : 8080,
             keepalive: 30,
             secure: false
         }
