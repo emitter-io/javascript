@@ -1,6 +1,6 @@
 const mqtt = require('mqtt');
 
-class Emitter {
+export class Emitter {
     private _mqtt: any;
     private _callbacks: Object;
 
@@ -295,7 +295,7 @@ class Emitter {
  * 
  * @interface IConnectOptions
  */
-interface ConnectRequest {
+export interface ConnectRequest {
     
     /**
      * Whether the connection should be MQTT over TLS or not. 
@@ -341,20 +341,20 @@ interface ConnectRequest {
 }
 
 
-interface PublishRequest {
+export interface PublishRequest {
     key: string;
     channel: string;
     message: any;
     ttl?: number;
 }
 
-interface SubscriptionRequest {
+export interface SubscriptionRequest {
     key: string;
     channel: string;
     last?: number;
 }
 
-interface KeyGenRequest {
+export interface KeyGenRequest {
     key: string;
     channel: string;
     type: string;
@@ -366,7 +366,7 @@ interface KeyGenRequest {
  * 
  * @interface PresenceRequest
  */
-interface PresenceRequest {
+export interface PresenceRequest {
     /**
      * The key to use for this request. The key should match the channel and have presence flag associated.
      * 
@@ -401,7 +401,7 @@ interface PresenceRequest {
  * 
  * @interface PresenceEvent
  */
-interface PresenceEvent {
+export interface PresenceEvent {
     /**
      * The event, can be "status", "join" or "leave".
      * 
@@ -438,7 +438,7 @@ interface PresenceEvent {
     who: Array<PresenceInfo> | PresenceInfo;
 }
 
-interface PresenceInfo {
+export interface PresenceInfo {
     /**
      * The id of the connection. 
      * 
@@ -459,7 +459,7 @@ interface PresenceInfo {
  * 
  * @class EmitterMessage
  */
-class EmitterMessage {
+export class EmitterMessage {
     
     public channel: string;
     public binary: any;
@@ -510,21 +510,24 @@ class EmitterMessage {
  * 
  * @interface IMqttMessage
  */
-interface IMqttMessage {
+export interface IMqttMessage {
     topic: string;
     payload: any;
 }
 
-interface Option {
+/**
+ * Represents an option (key/value pair) for a subscribe or publish operation.
+ */
+export interface Option {
     key: string;
     value: string;
 }
 
-module.exports = {
-   connect: function(request?: ConnectRequest, connectCallback?: any) : Emitter{
-       var client = new Emitter();
-       client.connect(request, connectCallback);
-       return client;
-   }
-};
-
+/**
+ * Connect creates a new instance of emitter client and connects to it.
+ */
+export function connect(request?: ConnectRequest, connectCallback?: any) : Emitter {
+    var client = new Emitter();
+    client.connect(request, connectCallback);
+    return client;
+}
