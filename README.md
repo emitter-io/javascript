@@ -144,6 +144,23 @@ Sends a key generation request to the server.
 * `type` the type of the key to generate. Possible options include `r` for read-only, `w` for write-only and `rw` for read-write keys, `String`
 * `ttl` is the time-to-live of the key, in seconds.
 
+
+-------------------------------------------------------
+<a name="presence"></a>
+### Emitter#presence({ key: string; channel: string; status: boolean; changes: boolean; })
+
+Requests the presence for a particular channel.
+* `key` is **master/secret key** to use for the operation, `String`
+* `channel` is the channel string to generate a key for, `String`
+* `status` whether the current state should be retrieved or not
+* `changes` whether the future changes should be received or not
+
+-------------------------------------------------------
+<a name="me"></a>
+### Emitter#me()
+
+Retrieves information about the underlying client connection.
+
 -------------------------------------------------------
 <a name="disconnect"></a>
 ### Emitter#disconnect()
