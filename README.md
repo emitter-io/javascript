@@ -52,6 +52,7 @@ client.publish({
   * <a href="#publish"><code>Emitter#<b>publish()</b></code></a>
   * <a href="#subscribe"><code>Emitter#<b>subscribe()</b></code></a>
   * <a href="#unsubscribe"><code>Emitter#<b>unsubscribe()</b></code></a>
+  * <a href="#keygen"><code>Emitter#<b>keygen()</b></code></a>
   * <a href="#disconnect"><code>Emitter#<b>disconnect()</b></code></a>
   * <a href="#message"><code><b>EmitterMessage()</b></code></a>
   * <a href="#asString"><code>EmitterMessage#<b>asString()</b></code></a>
@@ -102,6 +103,12 @@ Emitted when the client goes offline.
 
 Emitted when the client cannot connect (i.e. connack rc != 0) or when a parsing error occurs.
 
+#### Event `'keygen'`
+
+`function(keyJson) {}`
+
+Emitted when the client generate a key to a channel using <a href="#keygen"><code>Emitter#<b>keygen()</b></code></a> function.
+
 ### Event `'message'`
 
 `function(message) {}`
@@ -135,7 +142,7 @@ Unsubscribes from a channel
 * `channel` is the channel string to unsubscribe from, `String`
 
 -------------------------------------------------------
-<a name="unsubscribe"></a>
+<a name="keygen"></a>
 ### Emitter#keygen({ key: string; channel: string; type: string; ttl: number; })
 
 Sends a key generation request to the server.
