@@ -148,7 +148,7 @@ Unsubscribes from a channel
 Sends a key generation request to the server.
 * `key` is **master/secret key** to use for the operation, `String`
 * `channel` is the channel string to generate a key for, `String`
-* `type` the type of the key to generate. Possible options include `r` for read-only, `w` for write-only and `rw` for read-write keys, `String`
+* `type` the type of the key to generate. Possible options include `r` for read-only, `w` for write-only, `p` for presence only and `rw` for read-write keys (In addition to `rw`, you can use any combination of `r`, `w` and `p` for key generation), `String`
 * `ttl` is the time-to-live of the key, in seconds.
 
 
