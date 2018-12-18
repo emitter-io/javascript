@@ -2,33 +2,50 @@ export declare class Emitter {
     private _mqtt;
     private _callbacks;
     /**
-     * Occurs when connection is established.
+     * Connects to the emitter service.
      */
-    private _onConnect();
+    connect(request?: ConnectRequest, handler?: () => void): Emitter;
     /**
-     * Occurs when the connection was lost.
+     * Disconnects the client.
      */
-    private _onDisconnect();
+    disconnect(): Emitter;
     /**
-     * Occurs when the client went offline.
+     * Publishes a message to the currently opened endpoint.
      */
-    private _onOffline();
+    publish(request: PublishRequest): Emitter;
     /**
-     * Occurs when the client went offline.
+     * Subscribes to a particular channel.
      */
-    private _onError(error);
+    subscribe(request: SubscribeRequest): Emitter;
     /**
-     * Invokes the callback with a specific
+     * Unsubscribes from a particular channel.
      */
-    private _tryInvoke(name, args);
+    unsubscribe(request: UnsubscribeRequest): Emitter;
     /**
-     * Checks if a string starts with a prefix.
+     * Sends a key generation request to the server.
      */
-    private _startsWith(text, prefix);
+    keygen(request: KeyGenRequest): Emitter;
     /**
-     * Checks whether a string ends with a suffix.
+     * Sends a presence request to the server.
      */
-    private _endsWith(text, suffix);
+    presence(request: PresenceRequest): Emitter;
+    /**
+     * Request information about the connection to the server.
+     */
+    me(): Emitter;
+    /**
+     * Hooks an event to the client.
+     */
+    on(event: EmitterEvents | string, callback: (args?: any) => void): Emitter;
+    /**
+     * Unhooks an event from the client.
+     */
+    off(event: EmitterEvents | string, callback: (args?: any) => void): Emitter;
+    private _checkEvent;
+    /**
+     * Invokes the callback with a specific name.
+     */
+    private _tryInvoke;
     /**
      * Formats a channel for emitter.io protocol.
      *
@@ -38,47 +55,59 @@ export declare class Emitter {
      * @param {...Option[]} options The list of options to apply.
      * @returns
      */
-    private _formatChannel(key, channel, options);
+    private _formatChannel;
     /**
-     * Connects to the emitter service.
+     * Checks if a string starts with a prefix.
      */
-    connect(request?: ConnectRequest, handler?: () => void): void;
+    private _startsWith;
     /**
-     * Disconnects the client.
+     * Checks whether a string ends with a suffix.
      */
-    disconnect(): void;
-    /**
-    * Publishes a message to the currently opened endpoint.
-    */
-    publish(request: PublishRequest): void;
-    /**
-    * Subscribes to a particular channel.
-    */
-    subscribe(request: SubscriptionRequest): void;
-    /**
-    * Unsubscribes from a particular channel.
-    */
-    unsubscribe(request: SubscriptionRequest): void;
-    /**
-     * Sends a key generation request to the server.
-     */
-    keygen(request: KeyGenRequest): void;
-    /**
-     * Sends a presence request to the server.
-     */
-    presence(request: PresenceRequest): void;
-    /**
-     * Request information about the connection to the server.
-     */
-    me(): void;
-    /**
-     * Hooks an event to the client.
-     */
-    on(event: string, callback: any): void;
+    private _endsWith;
     /**
      * Logs the error and throws it
      */
-    private logError(message);
+    private _throwError;
+}
+/**
+ * Represents a message send througn emitter.io
+ *
+ * @class EmitterMessage
+ */
+export declare class EmitterMessage {
+    channel: string;
+    binary: any;
+    /**
+     * Creates an instance of EmitterMessage.
+     *
+     * @param {*} m The message
+     */
+    constructor(m: IMqttMessage);
+    /**
+     * Returns the payload as string.
+     */
+    asString(): string;
+    /**
+     * Returns the payload as binary.
+     */
+    asBinary(): any;
+    /**
+     * Returns the payload as JSON-deserialized object.
+     */
+    asObject(): any;
+}
+/**
+ * Represents the available events.
+ */
+export declare enum EmitterEvents {
+    connect = "connect",
+    disconnect = "disconnect",
+    message = "message",
+    offline = "offline",
+    error = "error",
+    keygen = "keygen",
+    presence = "presence",
+    me = "me"
 }
 /**
  * Represents connection options.
@@ -129,10 +158,14 @@ export interface PublishRequest {
     message: any;
     ttl?: number;
 }
-export interface SubscriptionRequest {
+export interface SubscribeRequest {
     key: string;
     channel: string;
     last?: number;
+}
+export interface UnsubscribeRequest {
+    key: string;
+    channel: string;
 }
 export interface KeyGenRequest {
     key: string;
@@ -222,32 +255,18 @@ export interface PresenceInfo {
      */
     username: string;
 }
-/**
- * Represents a message send througn emitter.io
- *
- * @class EmitterMessage
- */
-export declare class EmitterMessage {
+export interface UnsubscribeRequest {
+    key: string;
     channel: string;
-    binary: any;
-    /**
-     * Creates an instance of EmitterMessage.
-     *
-     * @param {*} m The message
-     */
-    constructor(m: IMqttMessage);
-    /**
-     * Returns the payload as string.
-     */
-    asString(): string;
-    /**
-     * Returns the payload as binary.
-     */
-    asBinary(): any;
-    /**
-     * Returns the payload as JSON-deserialized object.
-     */
-    asObject(): any;
+}
+export interface KeyGenEvent {
+    key: string;
+    channel: string;
+    status: number;
+}
+export interface MeEvent {
+    id: string;
+    username: string;
 }
 /**
  * Represents an MQTT message.
