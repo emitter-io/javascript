@@ -1,9 +1,9 @@
-module.exports = function(grunt){
-	
-	// Project configuration. 
-	grunt.initConfig({
+module.exports = function(grunt) {
+
+    // Project configuration. 
+    grunt.initConfig({
         browserify: {
-           options: {
+            options: {
                 alias: {
                     'emitter': '.'
                 }
@@ -13,7 +13,7 @@ module.exports = function(grunt){
                 dest: 'build/emitter.js',
             }
         },
-        
+
         concat: {
             dist: {
                 src: ['build/emitter.js', 'lib/browser.js'],
@@ -21,11 +21,11 @@ module.exports = function(grunt){
             },
         },
 
-        
-		uglify: {
-			options: {
+
+        uglify: {
+            options: {
                 mangle: true,
-                    compress: {
+                compress: {
                     sequences: true,
                     dead_code: true,
                     conditionals: true,
@@ -37,38 +37,38 @@ module.exports = function(grunt){
                 }
 
             },
-			js: {
-				files: { 'build/emitter.min.js': ['build/emitter.js'] }
-			}
-		},
-		
-		watch: {
-			scripts: {
-				files: ['lib/*.js'],
-				tasks: ['default'],
-				options: { spawn: false },
-			},
-		},
-        
+            js: {
+                files: { 'build/emitter.min.js': ['build/emitter.js'] }
+            }
+        },
+
+        watch: {
+            scripts: {
+                files: ['lib/*.js'],
+                tasks: ['default'],
+                options: { spawn: false },
+            },
+        },
+
         compress: {
             main: {
                 options: {
-                mode: 'gzip'
+                    mode: 'gzip'
                 },
                 files: [
 
-                    {expand: true, src: ['build/*.min.js'], dest: '', ext: '.gz.js'}
+                    { expand: true, src: ['build/*.min.js'], dest: '', ext: '.gz.js' }
                 ]
             }
         }
 
-	});
+    });
 
     grunt.loadNpmTasks('grunt-browserify');
-	grunt.loadNpmTasks('grunt-contrib-uglify');
-	grunt.loadNpmTasks('grunt-contrib-watch');
+    grunt.loadNpmTasks('grunt-contrib-uglify');
+    grunt.loadNpmTasks('grunt-contrib-watch');
     grunt.loadNpmTasks('grunt-contrib-compress');
     grunt.loadNpmTasks('grunt-contrib-concat');
-	
-	grunt.registerTask('default', ['browserify', 'concat', 'uglify', 'compress']);
+
+    grunt.registerTask('default', ['browserify', 'concat', 'uglify', 'compress']);
 };

@@ -1,16 +1,20 @@
 {
-    "files.exclude": {
-        "**/.git": true,
-        "conf": true,
-        "gulp_tasks": true,
-        "**/gulpfile.js": true,
-        "**/index.spec.js": true,
-        "tslint.json": true,
-        "**/.DS_Store": true,
-        "**/*.js.map": true,
-        "**/.*": true,
-        "node_modules": true,
-        "**/*.js": { "when": "$(basename).ts"},
-        "**/*?.js": { "when": "$(basename).tsx"}
+  "files.exclude": {
+    "**/.git": true,
+    "conf": true,
+    "gulp_tasks": true,
+    "**/gulpfile.js": true,
+    "**/index.spec.js": true,
+    "tslint.json": true,
+    "**/.DS_Store": true,
+    "**/*.js.map": true,
+    "**/.*": true,
+    "node_modules": true,
+    "**/*.js": {
+      "when": "$(basename).ts"
+    },
+    "**/*?.js": {
+      "when": "$(basename).tsx"
     }
+  }
 }

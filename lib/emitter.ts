@@ -494,15 +494,15 @@ export class EmitterMessage {
      */
     public asObject(): any{
         var object = {};
-		try
-		{
-			object = JSON.parse(this.asString());
-		}
-		catch (err)
-		{
-			console.error(err);
-		}
-		return object;
+        try
+        {
+            object = JSON.parse(this.asString());
+        }
+        catch (err)
+        {
+            console.error(err);
+        }
+        return object;
     }
 }
 
