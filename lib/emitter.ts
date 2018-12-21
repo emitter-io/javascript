@@ -1,66 +1,229 @@
 const mqtt = require('mqtt');
 
 export class Emitter {
+
     private _mqtt: any;
-    private _callbacks: Object;
+    private _callbacks: { [key: string]: ((args?: any) => void)[] };
 
     /**
-     * Occurs when connection is established.
+     * Connects to the emitter service.
      */
-    private _onConnect() : void {
-        this._tryInvoke('connect', this);
+    public connect(request?: ConnectRequest, handler?: () => void): Emitter {
+        request = request || {};
+
+        // auto-resolve the security level
+        if (request.secure == null) {
+            if (typeof window !== "undefined" && window != null && window.location != null && window.location.protocol != null) {
+                request.secure = window.location.protocol == "https:";
+            } else {
+                request.secure = false;
+            }
+        }
+
+        // default options
+        var defaultConnectOptions = {
+            host: "api.emitter.io",
+            port: request.secure ? 443 : 8080,
+            keepalive: 30,
+            secure: false
+        };
+
+        // apply defaults
+        for (var k in defaultConnectOptions) {
+            request[k] = "undefined" === typeof request[k] ? defaultConnectOptions[k] : request[k];
+        }
+
+        request.host = request.host.replace(/.*?:\/\//g, "");
+        var brokerUrl = `${request.secure ? "wss://" : "ws://"}${request.host}:${request.port}`;
+
+        this._callbacks = {"connect": [handler]};
+        this._mqtt = mqtt.connect(brokerUrl, request);
+
+        this._mqtt.on(EmitterEvents.connect, () => this._tryInvoke(EmitterEvents.connect, this));
+        this._mqtt.on("close", () => this._tryInvoke(EmitterEvents.disconnect, this));
+        this._mqtt.on("offline", () => this._tryInvoke(EmitterEvents.offline, this));
+        this._mqtt.on("error", error => this._tryInvoke(EmitterEvents.error, error));
+        this._mqtt.on("message", (topic, msg, packet) => {
+            var message = new EmitterMessage(packet);
+            if (this._startsWith(message.channel, "emitter/keygen")) {
+                // This is keygen message.
+                this._tryInvoke(EmitterEvents.keygen, message.asObject())
+            } else if (this._startsWith(message.channel, "emitter/presence")) {
+                // This is presence message.
+                this._tryInvoke(EmitterEvents.presence, message.asObject())
+            } else if (this._startsWith(message.channel, "emitter/me")) {
+                // This is a message requesting info on the connection.
+                this._tryInvoke(EmitterEvents.me, message.asObject());
+            } else {
+                // Do we have a message callback?
+                this._tryInvoke(EmitterEvents.message, message);
+            }
+        });
+        return this;
     }
-    
+
     /**
-     * Occurs when the connection was lost.
+     * Disconnects the client.
      */
-    private _onDisconnect() : void {
-        this._tryInvoke('disconnect', this);
+    public disconnect(): Emitter {
+        this._mqtt.end();
+        return this;
     }
-    
+
     /**
-     * Occurs when the client went offline.
+     * Publishes a message to the currently opened endpoint.
      */
-    private _onOffline() : void {
-        this._tryInvoke('offline', this);
+    public publish(request: PublishRequest): Emitter {
+        if (typeof request.key !== "string")
+            this._throwError("emitter.publish: request object does not contain a 'key' string.");
+        if (typeof request.channel !== "string")
+            this._throwError("emitter.publish: request object does not contain a 'channel' string.");
+        if (typeof request.message !== "object" && typeof request.message !== "string")
+            this._throwError("emitter.publish: request object does not contain a 'message' object.");
+
+        var options = new Array<Option>();
+        if (request.ttl) {
+            options.push({key: "ttl", value: request.ttl.toString()});
+        }
+
+        var topic = this._formatChannel(request.key, request.channel, options);
+        this._mqtt.publish(topic, request.message);
+        return this;
     }
-    
+
     /**
-     * Occurs when the client went offline.
+     * Subscribes to a particular channel.
      */
-    private _onError(error) : void {
-        this._tryInvoke('error', error);
+    public subscribe(request: SubscribeRequest): Emitter {
+        if (typeof request.key !== "string")
+            this._throwError("emitter.subscribe: request object does not contain a 'key' string.");
+        if (typeof request.channel !== "string")
+            this._throwError("emitter.subscribe: request object does not contain a 'channel' string.");
+
+        var options = new Array<Option>();
+        if (request.last != null) {
+            options.push({key: "last", value: request.last.toString()});
+        }
+
+        // Send MQTT subscribe
+        var topic = this._formatChannel(request.key, request.channel, options);
+        this._mqtt.subscribe(topic);
+        return this;
     }
-    
+
     /**
-     * Invokes the callback with a specific
+     * Unsubscribes from a particular channel.
      */
-    private _tryInvoke(name: string, args: any) {
-        var callback = this._callbacks[name];
-        if(typeof(callback) !== 'undefined' && callback !== null){
-            callback(args);
-            return;
+    public unsubscribe(request: UnsubscribeRequest): Emitter {
+        if (typeof request.key !== "string")
+            this._throwError("emitter.unsubscribe: request object does not contain a 'key' string.");
+        if (typeof request.channel !== "string")
+            this._throwError("emitter.unsubscribe: request object does not contain a 'channel' string.");
+
+        // Send MQTT unsubscribe
+        var topic = this._formatChannel(request.key, request.channel, []);
+        this._mqtt.unsubscribe(topic);
+        return this;
+    }
+
+    /**
+     * Sends a key generation request to the server.
+     */
+    public keygen(request: KeyGenRequest): Emitter {
+        if (typeof request.key !== "string")
+            this._throwError("emitter.keygen: request object does not contain a 'key' string.");
+        if (typeof request.channel !== "string")
+            this._throwError("emitter.keygen: request object does not contain a 'channel' string.");
+
+        // Publish the request
+        this._mqtt.publish("emitter/keygen/", JSON.stringify(request));
+        return this;
+    }
+
+    /**
+     * Sends a presence request to the server.
+     */
+    public presence(request: PresenceRequest): Emitter {
+        if (typeof request.key !== "string")
+            this._throwError("emitter.presence: request object does not contain a 'key' string.");
+        if (typeof request.channel !== "string")
+            this._throwError("emitter.presence: request object does not contain a 'channel' string.");
+
+        // Publish the request
+        this._mqtt.publish("emitter/presence/", JSON.stringify(request));
+        return this;
+    }
+
+    /**
+     * Request information about the connection to the server.
+     */
+    public me(): Emitter {
+        // Publish the request
+        this._mqtt.publish("emitter/me/", "");
+        return this;
+    }
+
+    /**
+     * Hooks an event to the client.
+     */
+    public on(event: EmitterEvents | string, callback: (args?: any) => void): Emitter {
+        this._checkEvent('off', event);
+        if (!this._callbacks) {
+            this._throwError("emitter.on: called before connecting");
+        }
+        // Set the callback
+        if (!this._callbacks[event]) {
+            this._callbacks[event] = [];
+        }
+        if (this._callbacks[event].indexOf(callback) === -1) {
+            this._callbacks[event].push(callback);
+        }
+        return this;
+    }
+
+    /**
+     * Unhooks an event from the client.
+     */
+    public off(event: EmitterEvents | string, callback: (args?: any) => void): Emitter {
+        this._checkEvent('off', event);
+        if (!this._callbacks) {
+            this._throwError("emitter.off: called before connecting");
+        }
+        var eventCallbacks = this._callbacks[event];
+        if (eventCallbacks) {
+            var index = eventCallbacks.indexOf(callback);
+            if (index >= 0) {
+                eventCallbacks.splice(index, 1);
+            }
+        }
+        return this;
+    }
+
+    private _checkEvent(method: 'on' | 'off', event: EmitterEvents | string) {
+        if (!EmitterEvents[event]) {
+            var names = Object.keys(EmitterEvents);
+            var values = names
+                .map((name, index) => `${index === names.length - 1 ? 'or ' : ''}'${name}'`)
+                .join(", ");
+            this._throwError(`emitter.${method}: unknown event type, supported values are ${values}.`);
         }
     }
-    
-    /**
-     * Checks if a string starts with a prefix.
-     */
-    private _startsWith(text: string, prefix: string): boolean {
-        return text.slice(0, prefix.length) == prefix;
-    }
-    
-    /**
-     * Checks whether a string ends with a suffix.
-     */
-    private _endsWith(text: string, suffix: string) : boolean {
-        return text.indexOf(suffix, text.length - suffix.length) !== -1;
-    };
 
-    
+    /**
+     * Invokes the callback with a specific name.
+     */
+    private _tryInvoke(name: EmitterEvents, args: any) {
+        var callbacks = this._callbacks[name];
+        if (callbacks) {
+            callbacks
+                .filter(callback => callback)
+                .forEach(callback => callback(args));
+        }
+    }
+
     /**
      * Formats a channel for emitter.io protocol.
-     * 
+     *
      * @private
      * @param {string} key The key to use.
      * @param {string} channel The channel name.
@@ -78,11 +241,9 @@ export class Emitter {
             formatted += "/";
 
         // Add options
-        if (options != null && options.length > 0)
-        {
+        if (options != null && options.length > 0) {
             formatted += "?";
-            for (var i: number = 0; i < options.length; ++i)
-            {
+            for (var i: number = 0; i < options.length; ++i) {
                 formatted += options[i].key + "=" + options[i].value;
                 if (i + 1 < options.length)
                     formatted += "&";
@@ -92,255 +253,142 @@ export class Emitter {
         // We're done compiling the channel name
         return formatted;
     }
-    
+
     /**
-     * Connects to the emitter service.
+     * Checks if a string starts with a prefix.
      */
-    public connect(request?: ConnectRequest, handler?: () => void) {
-        request = request || {};
-        
-        // auto-resolve the security level
-        if (request.secure == null) {
-            if (typeof window !== 'undefined' && window != null && window.location != null && window.location.protocol != null){
-                request.secure = (window.location.protocol == 'https:') ? true : false;    
-            } else {
-                request.secure = false;
-            }
-        }
-        
-        // default options
-        var defaultConnectOptions = {
-            host: "api.emitter.io",
-            port: request.secure ? 443 : 8080,
-            keepalive: 30,
-            secure: false
-        }
-            
-        // apply defaults
-        for (var k in defaultConnectOptions) {
-            request[k] = ('undefined' === typeof request[k])
-                ? defaultConnectOptions[k]
-                : request[k];
-        }
-
-        request.host = request.host.replace(/.*?:\/\//g, "");
-        var brokerUrl = (request.secure ? 'wss://' : 'ws://') + request.host + ':' + request.port;
-
-        this._callbacks = {"connect": handler};
-        this._mqtt = mqtt.connect(brokerUrl, request);
-        this._mqtt.on('connect', () => {
-            this._onConnect(); 
-        });
-        
-        this._mqtt.on('close', () => {
-            this._onDisconnect()
-        });
-        
-        this._mqtt.on('offline', () => {
-            this._onOffline()
-        });
-        
-        this._mqtt.on('error', (error) => {
-            this._onError(error)
-        });
-        
-        this._mqtt.on('message', (topic, msg, packet) => {
-            var message = new EmitterMessage(packet);
-            if(this._startsWith(message.channel, 'emitter/keygen')) {
-                // This is keygen message.
-                this._tryInvoke('keygen', message.asObject())
-            }
-            else if(this._startsWith(message.channel, 'emitter/presence')) {
-                // This is presence message.
-                this._tryInvoke('presence', message.asObject())
-            }
-            else if (this._startsWith(message.channel, 'emitter/me')) {
-                // This is a message requesting info on the connection.
-                this._tryInvoke('me', message.asObject());
-            }
-            else
-            {
-                // Do we have a message callback
-                this._tryInvoke('message', message);
-            }
-        });
+    private _startsWith(text: string, prefix: string): boolean {
+        return text.slice(0, prefix.length) == prefix;
     }
-    
+
     /**
-     * Disconnects the client.
+     * Checks whether a string ends with a suffix.
      */
-    public disconnect(){
-        this._mqtt.end();
-    }
-    
-    /**
-    * Publishes a message to the currently opened endpoint.
-    */
-    public publish (request: PublishRequest) {
-        if (typeof (request.key) !== "string")
-            this.logError("emitter.publish: request object does not contain a 'key' string.");
-        if (typeof (request.channel) !== "string")
-            this.logError("emitter.publish: request object does not contain a 'channel' string.");
-        if (typeof (request.message) !== "object" && typeof (request.message) !== "string")
-            this.logError("emitter.publish: request object does not contain a 'message' object.");
-
-        var options = new Array<Option>();
-        if (request.ttl){
-            options.push({ key: "ttl", value: request.ttl.toString() });
-        }
-        
-        var topic = this._formatChannel(request.key, request.channel, options);
-        this._mqtt.publish(topic, request.message);
-    }
-    
-    /**
-    * Subscribes to a particular channel.
-    */
-    public subscribe (request: SubscriptionRequest) {
-        if (typeof (request.key) !== "string")
-            this.logError("emitter.subscribe: request object does not contain a 'key' string.");
-        if (typeof (request.channel) !== "string")
-            this.logError("emitter.subscribe: request object does not contain a 'channel' string.");
-
-        var options = new Array<Option>();
-        if (request.last != null){
-            options.push({ key: "last", value: request.last.toString() });
-        }
-        
-        // Send MQTT subscribe
-        var topic = this._formatChannel(request.key, request.channel, options);
-        this._mqtt.subscribe(topic);
+    private _endsWith(text: string, suffix: string): boolean {
+        return text.indexOf(suffix, text.length - suffix.length) !== -1;
     }
 
-    /**
-    * Unsubscribes from a particular channel.
-    */
-    public unsubscribe (request: SubscriptionRequest) {
-        if (typeof (request.key) !== "string")
-            this.logError("emitter.unsubscribe: request object does not contain a 'key' string.")
-        if (typeof (request.channel) !== "string")
-            this.logError("emitter.unsubscribe: request object does not contain a 'channel' string.")
-
-        // Send MQTT unsubscribe
-        var topic = this._formatChannel(request.key, request.channel, []);
-        this._mqtt.unsubscribe(topic);
-    }
-    
-    /**
-     * Sends a key generation request to the server.
-     */
-    public keygen (request: KeyGenRequest) {
-        if (typeof (request.key) !== "string")
-            this.logError("emitter.keygen: request object does not contain a 'key' string.")
-        if (typeof (request.channel) !== "string")
-            this.logError("emitter.keygen: request object does not contain a 'channel' string.")
-            
-        // Publish the request
-        this._mqtt.publish("emitter/keygen/", JSON.stringify(request));
-    }
-
-    /**
-     * Sends a presence request to the server.
-     */
-    public presence (request: PresenceRequest) {
-        if (typeof (request.key) !== "string")
-            this.logError("emitter.presence: request object does not contain a 'key' string.")
-        if (typeof (request.channel) !== "string")
-            this.logError("emitter.presence: request object does not contain a 'channel' string.")
-            
-        // Publish the request
-        this._mqtt.publish("emitter/presence/", JSON.stringify(request));
-    }
-    /**
-     * Request information about the connection to the server.
-     */
-    public me () {
-        // Publish the request
-        this._mqtt.publish("emitter/me/", "");
-    };
-    /**
-     * Hooks an event to the client.
-     */
-    public on(event: string, callback: any) {
-        // Validate the type
-        switch(event){
-            case "connect": 
-            case "disconnect":
-            case "message":
-            case "offline":
-            case "error":
-            case "keygen":
-            case "presence":
-            case "me":
-            break;
-            default:
-                this.logError("emitter.on: unknown event type, supported values are 'connect', 'disconnect', 'message' and 'keygen'.");
-        }
-        
-        // Set the callback
-        this._callbacks[event] = callback;
-    }
-    
     /**
      * Logs the error and throws it
      */
-    private logError(message){
+    private _throwError(message) {
         console.error(message);
         throw new Error(message);
     }
+
 }
 
+/**
+ * Represents a message send througn emitter.io
+ *
+ * @class EmitterMessage
+ */
+export class EmitterMessage {
+
+    public channel: string;
+    public binary: any;
+
+    /**
+     * Creates an instance of EmitterMessage.
+     *
+     * @param {*} m The message
+     */
+    constructor(m: IMqttMessage) {
+        this.channel = m.topic;
+        this.binary = m.payload;
+    }
+
+    /**
+     * Returns the payload as string.
+     */
+    public asString(): string {
+        return this.binary.toString();
+    }
+
+    /**
+     * Returns the payload as binary.
+     */
+    public asBinary(): any {
+        return this.binary;
+    }
+
+    /**
+     * Returns the payload as JSON-deserialized object.
+     */
+    public asObject(): any {
+        var object = {};
+        try {
+            object = JSON.parse(this.asString());
+        } catch (err) {
+            console.error(err);
+        }
+        return object;
+    }
+}
 
 /**
- * Represents connection options. 
- * 
+ * Represents the available events.
+ */
+export enum EmitterEvents {
+    connect = "connect",
+    disconnect = "disconnect",
+    message = "message",
+    offline = "offline",
+    error = "error",
+    keygen = "keygen",
+    presence = "presence",
+    me = "me"
+}
+
+/**
+ * Represents connection options.
+ *
  * @interface IConnectOptions
  */
 export interface ConnectRequest {
-    
+
     /**
-     * Whether the connection should be MQTT over TLS or not. 
-     * 
+     * Whether the connection should be MQTT over TLS or not.
+     *
      * @type {boolean}
      */
     secure?: boolean;
-    
+
     /**
-     * The hostname to connect to. 
-     * 
+     * The hostname to connect to.
+     *
      * @type {string}
      */
     host?: string;
-    
+
     /**
-     * The port number to connect to. 
-     * 
+     * The port number to connect to.
+     *
      * @type {number}
      */
     port?: number;
-    
+
     /**
      * The number of seconts to wait between keepalive packets. Set to 0 to disable.
-     * 
+     *
      * @type {number} Keepalive in seconds.
      */
     keepalive?: number;
-    
+
     /**
      * The username required by your broker, if any
-     * 
+     *
      * @type {string}
      */
     username?: string;
-    
+
     /**
      * The password required by your broker, if any
-     * 
+     *
      * @type {string}
      */
     password?: string;
 }
-
 
 export interface PublishRequest {
     key: string;
@@ -349,10 +397,15 @@ export interface PublishRequest {
     ttl?: number;
 }
 
-export interface SubscriptionRequest {
+export interface SubscribeRequest {
     key: string;
     channel: string;
     last?: number;
+}
+
+export interface UnsubscribeRequest {
+    key: string;
+    channel: string;
 }
 
 export interface KeyGenRequest {
@@ -364,34 +417,34 @@ export interface KeyGenRequest {
 
 /**
  * Represents a presence request.
- * 
+ *
  * @interface PresenceRequest
  */
 export interface PresenceRequest {
     /**
      * The key to use for this request. The key should match the channel and have presence flag associated.
-     * 
+     *
      * @type {string}
      */
     key: string;
 
     /**
      * The target channel for the presence request.
-     * 
+     *
      * @type {string}
      */
     channel: string;
 
     /**
      * Whether a full status should be sent back in the response.
-     * 
+     *
      * @type {boolean}
      */
     status?: boolean;
 
     /**
      * Whether we should subscribe this client to presence notification events.
-     * 
+     *
      * @type {boolean}
      */
     changes?: boolean;
@@ -399,41 +452,41 @@ export interface PresenceRequest {
 
 /**
  * Represents a presence response message or a join/leave notification.
- * 
+ *
  * @interface PresenceEvent
  */
 export interface PresenceEvent {
     /**
      * The event, can be "status", "join" or "leave".
-     * 
+     *
      * @type {string}
      */
     event: string;
 
     /**
      * The channel for this event.
-     * 
+     *
      * @type {string}
      */
     channel: string;
 
     /**
      * The current channel occupancy (the number of subscribers).
-     * 
+     *
      * @type {number}
      */
     occupancy: number;
 
     /**
      * The UNIX timestamp of this event.
-     * 
+     *
      * @type {number}
      */
     time: number;
 
     /**
      * The list of clients or the client id.
-     * 
+     *
      * @type {(Array<PresenceInfo> | PresenceInfo)}
      */
     who: Array<PresenceInfo> | PresenceInfo;
@@ -441,74 +494,39 @@ export interface PresenceEvent {
 
 export interface PresenceInfo {
     /**
-     * The id of the connection. 
-     * 
+     * The id of the connection.
+     *
      * @type {string}
      */
     id: string;
-    
+
     /**
-     * The MQTT username associated with the connection. 
-     * 
+     * The MQTT username associated with the connection.
+     *
      * @type {string}
      */
     username: string;
 }
 
-/**
- * Represents a message send througn emitter.io
- * 
- * @class EmitterMessage
- */
-export class EmitterMessage {
-    
-    public channel: string;
-    public binary: any;
-    
-    /**
-     * Creates an instance of EmitterMessage.
-     * 
-     * @param {*} m The message
-     */
-    constructor(m: IMqttMessage){
-        this.channel = m.topic;
-        this.binary = m.payload;
-    }
-    
-    /**
-     * Returns the payload as string.
-     */
-    public asString(): string{
-        return this.binary.toString();
-    }
-    
-    /**
-     * Returns the payload as binary.
-     */
-    public asBinary(): any{
-        return this.binary;
-    }
-    
-    /**
-     * Returns the payload as JSON-deserialized object.
-     */
-    public asObject(): any{
-        var object = {};
-		try
-		{
-			object = JSON.parse(this.asString());
-		}
-		catch (err)
-		{
-			console.error(err);
-		}
-		return object;
-    }
+export interface UnsubscribeRequest {
+    key: string;
+    channel: string;
+}
+
+export interface KeyGenEvent {
+    key: string;
+    channel: string;
+    status: number;
+}
+
+export interface MeEvent {
+    id: string;
+    username: string;
 }
 
 /**
  * Represents an MQTT message.
- * 
+ *
  * @interface IMqttMessage
  */
 export interface IMqttMessage {
@@ -527,7 +545,7 @@ export interface Option {
 /**
  * Connect creates a new instance of emitter client and connects to it.
  */
-export function connect(request?: ConnectRequest, connectCallback?: any) : Emitter {
+export function connect(request?: ConnectRequest, connectCallback?: any): Emitter {
     var client = new Emitter();
     client.connect(request, connectCallback);
     return client;
