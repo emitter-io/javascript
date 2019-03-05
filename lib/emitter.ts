@@ -92,6 +92,19 @@ export class Emitter {
     }
 
     /**
+     * Publishes a message througth a link.
+     */
+    public publishWithLink(request: PublishWithLinkRequest): Emitter {
+        if (typeof request.link !== "string")
+            this._throwError("emitter.publishWithLink: request object does not contain a 'link' string.");
+        if (typeof request.message !== "object" && typeof request.message !== "string")
+            this._throwError("emitter.publishWithLink: request object does not contain a 'message' object.");
+
+        this._mqtt.publish(request.link, request.message);
+        return this;
+    }
+
+    /**
      * Subscribes to a particular channel.
      */
     public subscribe(request: SubscribeRequest): Emitter {
@@ -108,6 +121,46 @@ export class Emitter {
         // Send MQTT subscribe
         var topic = this._formatChannel(request.key, request.channel, options);
         this._mqtt.subscribe(topic);
+        return this;
+    }
+
+    /**
+     * Create a link to a particular channel.
+     */
+    public link(request: LinkRequest): Emitter {
+        if (typeof request.key !== "string")
+            this._throwError("emitter.link: request object does not contain a 'key' string.");
+        if (typeof request.channel !== "string")
+            this._throwError("emitter.link: request object does not contain a 'channel' string.");
+        if (typeof request.name !== "string")
+            this._throwError("emitter.link: request object does not contain a 'name' string.");
+        if (typeof request.private !== "boolean")
+            this._throwError("emitter.link: request object does not contain 'private'.");
+        if (typeof request.subscribe !== "boolean")
+            this._throwError("emitter.link: request object does not contain 'subscribe'.");
+
+        var options = new Array<Option>();
+        // The default server's behavior when 'me' is absent, is to send the publisher its own messages.
+		// To avoid any ambiguity, this parameter is always set here.
+        if (request.me == null || request.me == true) {
+            options.push({key: "me", value: '1'});
+        } else {
+            options.push({key: "me", value: '0'});
+        }
+        if (request.ttl != null) {
+            options.push({key: "ttl", value: request.ttl.toString()});
+        }
+
+        var formattedChannel = this._formatChannel(null, request.channel, options);
+        request = {
+            "key": request.key,
+            "channel": formattedChannel,
+            "name": request.name,
+            "private": request.private, 
+            "subscribe": request.subscribe}
+
+        console.log(JSON.stringify(request))
+        this._mqtt.publish('emitter/link/', JSON.stringify(request));
         return this;
     }
 
@@ -231,10 +284,10 @@ export class Emitter {
      * @returns
      */
     private _formatChannel(key: string, channel: string, options: Option[]) {
-        // Prefix with the key
-        var formatted = this._endsWith(key, "/")
-            ? key + channel
-            : key + "/" + channel;
+        // Prefix with the key if any
+        var formatted = channel
+		if (key && key.length > 0)
+			formatted = this._endsWith(key, "/") ? key + channel : key + "/" + channel
 
         // Add trailing slash
         if (!this._endsWith(formatted, "/"))
@@ -397,10 +450,25 @@ export interface PublishRequest {
     ttl?: number;
 }
 
+export interface PublishWithLinkRequest {
+    link: string;
+    message: any;
+}
+
 export interface SubscribeRequest {
     key: string;
     channel: string;
     last?: number;
+}
+
+export interface LinkRequest {
+    key: string;
+    channel: string;
+    name: string;
+    private: boolean;
+    subscribe: boolean;
+    ttl?: number;
+    me?: boolean;
 }
 
 export interface UnsubscribeRequest {

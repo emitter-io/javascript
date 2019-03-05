@@ -60,6 +60,18 @@ module.exports = function(grunt) {
                     { expand: true, src: ['build/*.min.js'], dest: '', ext: '.gz.js' }
                 ]
             }
+        },
+
+        copy: {
+            js: {
+                files: [
+                    { 
+                        cwd: 'build/',
+                        src: 'emitter.js',
+                        dest: 'sample/',
+                        expand: true }
+                ]
+            }
         }
 
     });
@@ -69,6 +81,7 @@ module.exports = function(grunt) {
     grunt.loadNpmTasks('grunt-contrib-watch');
     grunt.loadNpmTasks('grunt-contrib-compress');
     grunt.loadNpmTasks('grunt-contrib-concat');
+    grunt.loadNpmTasks('grunt-contrib-copy');
 
-    grunt.registerTask('default', ['browserify', 'concat', 'uglify', 'compress']);
+    grunt.registerTask('default', ['browserify', 'concat', 'uglify', 'compress', 'copy:js']);
 };

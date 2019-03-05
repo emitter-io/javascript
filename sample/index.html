@@ -1,0 +1,107 @@
+<html>
+    <script src="emitter.js"></script>
+    <script>
+        var emitter = emitter.connect()
+        var key = '5xZjIQp6GA9fpxso1Kslqnv8d4XVWCha'
+        var channel = 'test/'
+        var shortcut = 'a0'
+
+        emitter.on('message', function(m) {
+            console.log('Message received on channel ' + m.channel + ': ' + m.asString())
+        })
+        emitter.on('error', function(m){
+            console.log('Error: ' + m)
+        })
+        emitter.on('presence', function(m){
+            console.log('Presence message: ' + JSON.stringify(m))
+        })
+        emitter.on('me', function(m) {
+            console.log('Me message: ' + JSON.stringify(m))
+        })
+
+        function subscribe()
+        {
+            emitter.subscribe({
+                key: key,
+                channel: channel
+            })
+        }
+
+        function unsubscribe()
+        {
+            emitter.unsubscribe({
+                key: key,
+                channel: channel
+            })
+        }
+
+        function publish()
+        {
+            emitter.publish({
+                key: key,
+                channel: channel,
+                message: "hello world"
+            })
+        }
+
+        function publishWithLink()
+        {
+            emitter.publishWithLink({
+                link: shortcut,
+                message: "hello world through link"
+            })
+        }
+
+        function link()
+        {
+            emitter.link({
+                key: key,
+                channel: channel,
+                name: shortcut,
+                private: false,
+                subscribe: true,
+                me: false
+            })
+        }
+
+        function linkPrivate()
+        {
+            emitter.link({
+                key: key,
+                channel: channel,
+                name: shortcut,
+                private: true,
+                subscribe: true
+            })
+        }
+
+        function presence()
+        {
+            emitter.presence({
+                key: key,
+                channel: channel,
+                changes: true,
+                status: true
+            })
+        }
+
+        function me()
+        {
+            emitter.me()
+        }
+
+
+    </script>
+    <body>
+        Results are shown in the console.<br />
+        <button type="button" onclick="subscribe()">Subscribe</button>
+        <button type="button" onclick="unsubscribe()">Unsubscribe</button>  
+        <button type="button" onclick="publish()">Publish</button> 
+        <button type="button" onclick="link()">Link</button> 
+        <button type="button" onclick="linkPrivate()">Link private</button> 
+        <button type="button" onclick="publishWithLink()">Publish with link</button> 
+        <button type="button" onclick="presence()">Presence</button> 
+        <button type="button" onclick="me()">Me</button> 
+        </textarea> 
+    </body>
+</html>

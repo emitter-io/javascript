@@ -14,9 +14,17 @@ export declare class Emitter {
      */
     publish(request: PublishRequest): Emitter;
     /**
+     * Publishes a message througth a link.
+     */
+    publishWithLink(request: PublishWithLinkRequest): Emitter;
+    /**
      * Subscribes to a particular channel.
      */
     subscribe(request: SubscribeRequest): Emitter;
+    /**
+     * Create a link to a particular channel.
+     */
+    link(request: LinkRequest): Emitter;
     /**
      * Unsubscribes from a particular channel.
      */
@@ -158,10 +166,23 @@ export interface PublishRequest {
     message: any;
     ttl?: number;
 }
+export interface PublishWithLinkRequest {
+    link: string;
+    message: any;
+}
 export interface SubscribeRequest {
     key: string;
     channel: string;
     last?: number;
+}
+export interface LinkRequest {
+    key: string;
+    channel: string;
+    name: string;
+    private: boolean;
+    subscribe: boolean;
+    ttl?: number;
+    me?: boolean;
 }
 export interface UnsubscribeRequest {
     key: string;
