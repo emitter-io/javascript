@@ -165,6 +165,7 @@ export interface PublishRequest {
     channel: string;
     message: any;
     ttl?: number;
+    me?: boolean;
 }
 export interface PublishWithLinkRequest {
     link: string;

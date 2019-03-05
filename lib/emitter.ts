@@ -82,6 +82,13 @@ export class Emitter {
             this._throwError("emitter.publish: request object does not contain a 'message' object.");
 
         var options = new Array<Option>();
+        // The default server's behavior when 'me' is absent, is to send the publisher its own messages.
+		// To avoid any ambiguity, this parameter is always set here.
+        if (request.me == null || request.me == true) {
+            options.push({key: "me", value: '1'});
+        } else {
+            options.push({key: "me", value: '0'});
+        }
         if (request.ttl) {
             options.push({key: "ttl", value: request.ttl.toString()});
         }
@@ -448,6 +455,7 @@ export interface PublishRequest {
     channel: string;
     message: any;
     ttl?: number;
+    me?: boolean;
 }
 
 export interface PublishWithLinkRequest {
