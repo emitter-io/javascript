@@ -49,11 +49,14 @@ client.publish({
 ## API
   * <a href="#connect"><code><b>connect()</b></code></a>
   * <a href="#client"><code><b>Emitter()</b></code></a>
+  * <a href="#disconnect"><code>Emitter#<b>disconnect()</b></code></a>
   * <a href="#publish"><code>Emitter#<b>publish()</b></code></a>
   * <a href="#subscribe"><code>Emitter#<b>subscribe()</b></code></a>
   * <a href="#unsubscribe"><code>Emitter#<b>unsubscribe()</b></code></a>
   * <a href="#keygen"><code>Emitter#<b>keygen()</b></code></a>
-  * <a href="#disconnect"><code>Emitter#<b>disconnect()</b></code></a>
+  * <a href="#link"><code>Emitter#<b>link()</b></code></a>
+  * <a href="#me"><code>Emitter#<b>me()</b></code></a>
+  * <a href="#presence"><code>Emitter#<b>presence()</b></code></a>
   * <a href="#message"><code><b>EmitterMessage()</b></code></a>
   * <a href="#asString"><code>EmitterMessage#<b>asString()</b></code></a>
   * <a href="#asBinary"><code>EmitterMessage#<b>asBinary()</b></code></a>
@@ -115,15 +118,48 @@ Emitted when the client generate a key to a channel using <a href="#keygen"><cod
 
 Emitted when the client receives a message packet. The message object will be of [EmitterMessage](#message) class, encapsulating the channel and the payload.
 
+-------------------------------------------------------
+<a name="disconnect"></a>
+### Emitter#disconnect()
+
+Disconnects from the remote broker
+
+-------------------------------------------------------
+<a name="link"></a>
+### Emitter#link({ key: string; channel: string; name: string; private: boolean; message: any; ttl?: number; me?: boolean; })
+
+Creates a 2-character link to a channel. The channel may be private. For more information about this feature, see [Emitter: Simplify Client/Server and IoT Apps with Links and Private Links (on YouTube)](https://youtu.be/_FgKiUlEb_s) and the [Emitter Pull Request (on GitHub)](https://github.com/emitter-io/emitter/pull/183).
+
+* `key` is security key to use for the operation, `String`
+* `channel` is the channel string to publish to, `String`
+* `name` is the 2-character name of the link, `String`
+* `private` requests the creation of a private channel, `Boolean`
+* `message` is the message to publish, `Buffer` or `String`
+* `ttl` is the time to live of the messages that will be sent through the link, `Number`.
+* `me` tells whether the messages sent through the link should be also sent to the publisher, `Boolean`. By default it is set to `true`.
+
+See also `publishWithLink()`.
 
 -------------------------------------------------------
 <a name="publish"></a>
-### Emitter#publish({ key: string; channel: string; message: any;  })
+### Emitter#publish({ key: string; channel: string; message: any; ttl?: number; me?: boolean; })
 
-Publish a message to a channel
+Publishes a message to a channel
 * `key` is security key to use for the operation, `String`
 * `channel` is the channel string to publish to, `String`
 * `message` is the message to publish, `Buffer` or `String`
+* `ttl` is the time to live of the message, `Number`
+* `me` tells whether the messages should be also sent to the publisher, `Boolean`. By default it is set to `true`.
+
+-------------------------------------------------------
+<a name="publishWithLink"></a>
+### Emitter#publishWithLink({ link: string; message: any;  })
+
+Publishes a message to a link.
+* `link` is the name of the link, `String`
+* `message` is the message to publish, `Buffer` or `String`
+
+See also `link()`.
 
 -------------------------------------------------------
 <a name="subscribe"></a>
@@ -151,6 +187,11 @@ Sends a key generation request to the server.
 * `type` the type of the key to generate. Possible options include `r` for read-only, `w` for write-only, `p` for presence only and `rw` for read-write keys (In addition to `rw`, you can use any combination of `r`, `w` and `p` for key generation), `String`
 * `ttl` is the time-to-live of the key, in seconds.
 
+-------------------------------------------------------
+<a name="me"></a>
+### Emitter#me()
+
+Retrieves information about the underlying client connection. Information includes the client ID and the links created by the client.
 
 -------------------------------------------------------
 <a name="presence"></a>
@@ -161,18 +202,6 @@ Requests the presence for a particular channel.
 * `channel` is the channel string to generate a key for, `String`
 * `status` whether the current state should be retrieved or not
 * `changes` whether the future changes should be received or not
-
--------------------------------------------------------
-<a name="me"></a>
-### Emitter#me()
-
-Retrieves information about the underlying client connection.
-
--------------------------------------------------------
-<a name="disconnect"></a>
-### Emitter#disconnect()
-
-Disconnects from the remote broker
 
 -------------------------------------------------------
 <a name="message"></a>
