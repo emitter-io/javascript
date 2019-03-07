@@ -1,8 +1,12 @@
 <html>
     <script src="emitter.js"></script>
     <script>
+        //var emitter = emitter.connect({host:"127.0.0.1", port:"8080"})
+        //var key = 'EckDAy4LHt_T0eTPSBK_0dmOAGhakMgI'
+        
         var emitter = emitter.connect()
         var key = '5xZjIQp6GA9fpxso1Kslqnv8d4XVWCha'
+        
         var channel = 'test/'
         var shortcut = 'a0'
 
@@ -17,6 +21,12 @@
         })
         emitter.on('me', function(m) {
             console.log('Me message: ' + JSON.stringify(m))
+        })
+        emitter.on('connect', function(){
+            console.log('Connected')
+        })
+        emitter.on('disconnect', function(){
+            console.log('Disconnected')
         })
 
         function subscribe()
