@@ -1,6 +1,7 @@
 export declare class Emitter {
     private _mqtt;
     private _callbacks;
+    private _reqCallbacks;
     /**
      * Connects to the emitter service.
      */
@@ -40,7 +41,7 @@ export declare class Emitter {
     /**
      * Request information about the connection to the server.
      */
-    me(): Emitter;
+    me(callback: (args?: any) => void): Emitter;
     /**
      * Hooks an event to the client.
      */
@@ -54,6 +55,7 @@ export declare class Emitter {
      * Invokes the callback with a specific name.
      */
     private _tryInvoke;
+    private _tryInvokeResponse;
     /**
      * Formats a channel for emitter.io protocol.
      *

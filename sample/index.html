@@ -1,11 +1,11 @@
 <html>
     <script src="emitter.js"></script>
     <script>
-        //var emitter = emitter.connect({host:"127.0.0.1", port:"8080"})
-        //var key = 'EckDAy4LHt_T0eTPSBK_0dmOAGhakMgI'
+        var emitter = emitter.connect({host:"127.0.0.1", port:"8080"})
+        var key = 'TOgF-2gsCV4i1O2HQW6tIYNUs-BzoVNo'
         
-        var emitter = emitter.connect()
-        var key = '5xZjIQp6GA9fpxso1Kslqnv8d4XVWCha'
+        //var emitter = emitter.connect()
+        //var key = '5xZjIQp6GA9fpxso1Kslqnv8d4XVWCha'
         
         var channel = 'test/'
         var shortcut = 'a0'
@@ -95,9 +95,13 @@
             })
         }
 
+        function meCb(msg) {
+            console.log("Me Callback");
+        }
+
         function me()
         {
-            emitter.me()
+            emitter.me(meCb);
         }
 
 

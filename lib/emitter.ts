@@ -4,6 +4,7 @@ export class Emitter {
 
     private _mqtt: any;
     private _callbacks: { [key: string]: ((args?: any) => void)[] };
+    private _reqCallbacks: { [key: number]: (args?: any) => void }; // me, keygen, keyban, ... to implement the request-response pattern.
 
     /**
      * Connects to the emitter service.
@@ -37,6 +38,7 @@ export class Emitter {
         var brokerUrl = `${request.secure ? "wss://" : "ws://"}${request.host}:${request.port}`;
 
         this._callbacks = {"connect": [handler]};
+        this._reqCallbacks = {};
         this._mqtt = mqtt.connect(brokerUrl, request);
 
         this._mqtt.on(EmitterEvents.connect, () => this._tryInvoke(EmitterEvents.connect, this));
@@ -45,6 +47,12 @@ export class Emitter {
         this._mqtt.on("error", error => this._tryInvoke(EmitterEvents.error, error));
         this._mqtt.on("message", (topic, msg, packet) => {
             var message = new EmitterMessage(packet);
+
+            if (!this._startsWith(message.channel, "emitter/")) {
+                this._tryInvoke(EmitterEvents.message, message);
+                return;
+            }
+
             if (this._startsWith(message.channel, "emitter/keygen")) {
                 // This is keygen message.
                 this._tryInvoke(EmitterEvents.keygen, message.asObject())
@@ -53,10 +61,7 @@ export class Emitter {
                 this._tryInvoke(EmitterEvents.presence, message.asObject())
             } else if (this._startsWith(message.channel, "emitter/me")) {
                 // This is a message requesting info on the connection.
-                this._tryInvoke(EmitterEvents.me, message.asObject());
-            } else {
-                // Do we have a message callback?
-                this._tryInvoke(EmitterEvents.message, message);
+                this._tryInvokeResponse(message);
             }
         });
         return this;
@@ -217,9 +222,10 @@ export class Emitter {
     /**
      * Request information about the connection to the server.
      */
-    public me(): Emitter {
+    public me(callback: (args?: any) => void): Emitter {
         // Publish the request
-        this._mqtt.publish("emitter/me/", "");
+        this._mqtt.publish("emitter/me/", "", {"qos": 1});
+        this._reqCallbacks[this._mqtt.getLastMessageId()] = callback;
         return this;
     }
 
@@ -279,6 +285,17 @@ export class Emitter {
                 .filter(callback => callback)
                 .forEach(callback => callback(args));
         }
+    }
+
+
+    private _tryInvokeResponse(message: EmitterMessage) : boolean {
+        const msgObj = message.asObject();
+        if ("req" in msgObj && this._reqCallbacks[msgObj.req]) {
+            this._reqCallbacks[msgObj.req](msgObj);
+            delete this._reqCallbacks[msgObj.req]
+            return true;
+        }
+        return false;
     }
 
     /**
