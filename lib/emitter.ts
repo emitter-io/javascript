@@ -53,14 +53,10 @@ export class Emitter {
                 return;
             }
 
-            if (this._startsWith(message.channel, "emitter/keygen")) {
-                // This is keygen message.
-                this._tryInvoke(EmitterEvents.keygen, message.asObject())
-            } else if (this._startsWith(message.channel, "emitter/presence")) {
+            if (this._startsWith(message.channel, "emitter/presence")) {
                 // This is presence message.
-                this._tryInvoke(EmitterEvents.presence, message.asObject())
-            } else if (this._startsWith(message.channel, "emitter/me")) {
-                // This is a message requesting info on the connection.
+                this._tryInvoke(EmitterEvents.presence, message.asObject());
+            } else { // Keygen, keyban, me, and all requests waiting for a specific response from the server
                 this._tryInvokeResponse(message);
             }
         });
@@ -146,8 +142,6 @@ export class Emitter {
             this._throwError("emitter.link: request object does not contain a 'channel' string.");
         if (typeof request.name !== "string")
             this._throwError("emitter.link: request object does not contain a 'name' string.");
-        if (typeof request.private !== "boolean")
-            this._throwError("emitter.link: request object does not contain 'private'.");
         if (typeof request.subscribe !== "boolean")
             this._throwError("emitter.link: request object does not contain 'subscribe'.");
 
@@ -168,7 +162,6 @@ export class Emitter {
             "key": request.key,
             "channel": formattedChannel,
             "name": request.name,
-            "private": request.private, 
             "subscribe": request.subscribe}
 
         console.log(JSON.stringify(request))
@@ -194,14 +187,32 @@ export class Emitter {
     /**
      * Sends a key generation request to the server.
      */
-    public keygen(request: KeyGenRequest): Emitter {
+    public keygen(request: KeyGenRequest, callback: (args?: any) => void): Emitter {
         if (typeof request.key !== "string")
             this._throwError("emitter.keygen: request object does not contain a 'key' string.");
         if (typeof request.channel !== "string")
             this._throwError("emitter.keygen: request object does not contain a 'channel' string.");
 
         // Publish the request
-        this._mqtt.publish("emitter/keygen/", JSON.stringify(request));
+        this._mqtt.publish("emitter/keygen/", JSON.stringify(request), {"qos": 1});
+        this._reqCallbacks[this._mqtt.getLastMessageId()] = callback;
+        return this;
+    }
+
+    /**
+     * Sends a key ban/unban request to the server.
+     */
+    public keyban(request: KeyBanRequest, callback: (args?: any) => void): Emitter {
+        if (typeof request.secretKey !== "string")
+            this._throwError("emitter.keyban: request object does not contain a 'secretKey' string.");
+        if (typeof request.targetKey !== "string")
+            this._throwError("emitter.keyban: request object does not contain a 'targetKey' string.");
+        if (typeof request.banned !== "boolean")
+            this._throwError("emitter.keyban: request object does not contain a 'banned' boolean.");
+
+        // Publish the request
+        this._mqtt.publish("emitter/keyban/", JSON.stringify(request), {"qos": 1});
+        this._reqCallbacks[this._mqtt.getLastMessageId()] = callback;
         return this;
     }
 
@@ -412,9 +423,7 @@ export enum EmitterEvents {
     message = "message",
     offline = "offline",
     error = "error",
-    keygen = "keygen",
-    presence = "presence",
-    me = "me"
+    presence = "presence"
 }
 
 /**
@@ -490,7 +499,6 @@ export interface LinkRequest {
     key: string;
     channel: string;
     name: string;
-    private: boolean;
     subscribe: boolean;
     ttl?: number;
     me?: boolean;
@@ -508,6 +516,11 @@ export interface KeyGenRequest {
     ttl: number;
 }
 
+export interface KeyBanRequest {
+    secretKey: string;
+    targetKey: string;
+    banned: boolean;
+}
 /**
  * Represents a presence request.
  *

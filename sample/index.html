@@ -68,20 +68,8 @@
                 key: key,
                 channel: channel,
                 name: shortcut,
-                private: false,
                 subscribe: true,
                 me: false
-            })
-        }
-
-        function linkPrivate()
-        {
-            emitter.link({
-                key: key,
-                channel: channel,
-                name: shortcut,
-                private: true,
-                subscribe: true
             })
         }
 
@@ -95,13 +83,9 @@
             })
         }
 
-        function meCb(msg) {
-            console.log("Me Callback");
-        }
-
         function me()
         {
-            emitter.me(meCb);
+            emitter.me(msg => console.log('Me message: ' + JSON.stringify(m)));
         }
 
 
@@ -112,10 +96,11 @@
         <button type="button" onclick="unsubscribe()">Unsubscribe</button>  
         <button type="button" onclick="publish()">Publish</button> 
         <button type="button" onclick="link()">Link</button> 
-        <button type="button" onclick="linkPrivate()">Link private</button> 
         <button type="button" onclick="publishWithLink()">Publish with link</button> 
         <button type="button" onclick="presence()">Presence</button> 
         <button type="button" onclick="me()">Me</button> 
+        <button type="button" onclick="allowKey()">Allow key</button>
+        <button type="button" onclick="banKey()">Ban key</button>
         </textarea> 
     </body>
 </html>

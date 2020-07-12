@@ -33,7 +33,11 @@ export declare class Emitter {
     /**
      * Sends a key generation request to the server.
      */
-    keygen(request: KeyGenRequest): Emitter;
+    keygen(request: KeyGenRequest, callback: (args?: any) => void): Emitter;
+    /**
+     * Sends a key ban/unban request to the server.
+     */
+    keyban(request: KeyBanRequest, callback: (args?: any) => void): Emitter;
     /**
      * Sends a presence request to the server.
      */
@@ -115,9 +119,7 @@ export declare enum EmitterEvents {
     message = "message",
     offline = "offline",
     error = "error",
-    keygen = "keygen",
-    presence = "presence",
-    me = "me"
+    presence = "presence"
 }
 /**
  * Represents connection options.
@@ -182,7 +184,6 @@ export interface LinkRequest {
     key: string;
     channel: string;
     name: string;
-    private: boolean;
     subscribe: boolean;
     ttl?: number;
     me?: boolean;
@@ -196,6 +197,11 @@ export interface KeyGenRequest {
     channel: string;
     type: string;
     ttl: number;
+}
+export interface KeyBanRequest {
+    secretKey: string;
+    targetKey: string;
+    banned: boolean;
 }
 /**
  * Represents a presence request.
