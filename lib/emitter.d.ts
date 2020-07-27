@@ -44,11 +44,11 @@ export declare class Emitter {
     /**
      * Hooks an event to the client.
      */
-    on(event: EmitterEvents | string, callback: (args?: any) => void): Emitter;
+    on<K extends keyof EmitterEventMap>(event: K, callback: (args?: EmitterEventMap[K]) => void): Emitter;
     /**
      * Unhooks an event from the client.
      */
-    off(event: EmitterEvents | string, callback: (args?: any) => void): Emitter;
+    off<K extends keyof EmitterEventMap>(event: K, callback: (args?: EmitterEventMap[K]) => void): Emitter;
     private _checkEvent;
     /**
      * Invokes the callback with a specific name.
@@ -105,17 +105,17 @@ export declare class EmitterMessage {
     asObject(): any;
 }
 /**
- * Represents the available events.
+ * Map of the available events and their respective callback arguments.
  */
-export declare enum EmitterEvents {
-    connect = "connect",
-    disconnect = "disconnect",
-    message = "message",
-    offline = "offline",
-    error = "error",
-    keygen = "keygen",
-    presence = "presence",
-    me = "me"
+export declare interface EmitterEventMap {
+    "connect": unknown; // to-do: implement the connack type
+    "disconnect": void;
+    "message": EmitterMessage;
+    "offline": void;
+    "error": unknown; // to-do: implement the error type
+    "keygen": KeyGenEvent;
+    "presence": PresenceEvent;
+    "me": MeEvent;
 }
 /**
  * Represents connection options.
