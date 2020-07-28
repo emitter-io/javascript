@@ -44,11 +44,11 @@ export declare class Emitter {
     /**
      * Hooks an event to the client.
      */
-    on<K extends keyof EmitterEventMap>(event: K, callback: (args?: EmitterEventMap[K]) => void): Emitter;
+    on<K extends keyof EmitterEventMap>(event: K, callback: (args: EmitterEventMap[K]) => void): Emitter;
     /**
      * Unhooks an event from the client.
      */
-    off<K extends keyof EmitterEventMap>(event: K, callback: (args?: EmitterEventMap[K]) => void): Emitter;
+    off<K extends keyof EmitterEventMap>(event: K, callback: (args: EmitterEventMap[K]) => void): Emitter;
     private _checkEvent;
     /**
      * Invokes the callback with a specific name.
