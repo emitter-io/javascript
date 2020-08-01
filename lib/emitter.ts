@@ -39,7 +39,7 @@ export class Emitter {
         this._callbacks = {"connect": [handler]};
         this._mqtt = mqtt.connect(brokerUrl, request);
 
-        this._mqtt.on(EmitterEvents.connect, () => this._tryInvoke(EmitterEvents.connect, this));
+        this._mqtt.on("connect", () => this._tryInvoke(EmitterEvents.connect, this));
         this._mqtt.on("close", () => this._tryInvoke(EmitterEvents.disconnect, this));
         this._mqtt.on("offline", () => this._tryInvoke(EmitterEvents.offline, this));
         this._mqtt.on("error", error => this._tryInvoke(EmitterEvents.error, error));
@@ -226,7 +226,7 @@ export class Emitter {
     /**
      * Hooks an event to the client.
      */
-    public on(event: EmitterEvents | string, callback: (args?: any) => void): Emitter {
+    public on<K extends keyof EmitterEventsArgsMap>(event: K, callback: (args: EmitterEventsArgsMap[K]) => void): Emitter {
         this._checkEvent('off', event);
         if (!this._callbacks) {
             this._throwError("emitter.on: called before connecting");
@@ -244,7 +244,7 @@ export class Emitter {
     /**
      * Unhooks an event from the client.
      */
-    public off(event: EmitterEvents | string, callback: (args?: any) => void): Emitter {
+    public off<K extends keyof EmitterEventsArgsMap>(event: K, callback: (args: EmitterEventsArgsMap[K]) => void): Emitter {
         this._checkEvent('off', event);
         if (!this._callbacks) {
             this._throwError("emitter.off: called before connecting");
@@ -398,6 +398,20 @@ export enum EmitterEvents {
     keygen = "keygen",
     presence = "presence",
     me = "me"
+}
+
+/**
+ * Represents the argument type of each event callback.
+ */
+export interface EmitterEventsArgsMap {
+    [EmitterEvents.connect]: Emitter,
+    [EmitterEvents.disconnect]: Emitter,
+    [EmitterEvents.message]: EmitterMessage,
+    [EmitterEvents.offline]: Emitter,
+    [EmitterEvents.error]: unknown,
+    [EmitterEvents.keygen]: KeyGenEvent,
+    [EmitterEvents.presence]: PresenceEvent,
+    [EmitterEvents.me]: MeEvent
 }
 
 /**
